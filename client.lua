@@ -1,3 +1,5 @@
+-- Rocket League Game Mode - Client Script
+
 local playerVehicle = nil
 local ball = nil
 local timer = 180 -- 3 minutes match duration
@@ -11,27 +13,53 @@ local team2Score = 0
 local team1MVP = nil
 local team2MVP = nil
 
--- Game vehicle spawn logic
+-- Spawn player vehicle logic
 RegisterNetEvent("rocketleague:spawnPlayerVehicle")
 AddEventHandler("rocketleague:spawnPlayerVehicle", function(playerID)
-    local playerPed = GetPlayerPed(playerID)
-    local spawnCoords = RocketLeague.Teams[playerID].spawn
+    local playerPed = GetPlayerPed(-1) -- Get the player's ped
+    local spawnCoords = RocketLeague.Teams[playerID] and RocketLeague.Teams[playerID].spawn
+
+    -- Debug: Check if spawn coordinates are defined
+    if not spawnCoords then
+        print("[RocketLeague Debug] Spawn coordinates not found for player ID: " .. tostring(playerID))
+        return
+    end
 
     -- Delete existing vehicle if any
     if playerVehicle then
         SetEntityAsMissionEntity(playerVehicle, true, true)
         DeleteVehicle(playerVehicle)
+        playerVehicle = nil -- Reset the vehicle reference
     end
 
-    -- Spawn new vehicle at assigned spawn point
-    RequestModel("rcbandito")
-    while not HasModelLoaded("rcbandito") do
+    -- Request and load the vehicle model
+    local vehicleModel = GetHashKey("rcbandito")
+    RequestModel(vehicleModel)
+    while not HasModelLoaded(vehicleModel) do
         Wait(500)
+        print("[RocketLeague Debug] Loading vehicle model: rcbandito...")
     end
 
-    playerVehicle = CreateVehicle("rcbandito", spawnCoords.x, spawnCoords.y, spawnCoords.z, spawnCoords.w, true, false)
+    -- Debug: Check if vehicle model is loaded
+    if not IsModelInCdimage(vehicleModel) or not IsModelAVehicle(vehicleModel) then
+        print("[RocketLeague Debug] Vehicle model 'rcbandito' is invalid or not found.")
+        return
+    end
+
+    -- Spawn the vehicle at the assigned spawn point
+    print("[RocketLeague Debug] Spawning vehicle at coordinates: ", spawnCoords.x, spawnCoords.y, spawnCoords.z)
+    playerVehicle = CreateVehicle(vehicleModel, spawnCoords.x, spawnCoords.y, spawnCoords.z, spawnCoords.w, true, false)
+
+    -- Debug: Check if vehicle was successfully created
+    if not DoesEntityExist(playerVehicle) then
+        print("[RocketLeague Debug] Failed to create vehicle.")
+        return
+    end
+
+    -- Teleport the player into the vehicle
     TaskWarpPedIntoVehicle(playerPed, playerVehicle, -1)
     SetVehicleNumberPlateText(playerVehicle, "ROCKETLEAGUE")
+    print("[RocketLeague Debug] Player teleported into vehicle successfully.")
 end)
 
 -- Ball mechanics (spawning, resetting)
@@ -124,79 +152,7 @@ AddEventHandler("rocketleague:goalScored", function(teamIndex)
     TriggerServerEvent("rocketleague:updateScore", teamIndex, teamIndex == 1 and team1Score or team2Score)
 end)
 
--- Goal animation and effects (slow-motion)
-RegisterNetEvent("rocketleague:showGoalAnimation")
-AddEventHandler("rocketleague:showGoalAnimation", function(teamIndex)
-    SetTimecycleModifier("force_dof_4")
-    Citizen.Wait(3000)
-    ClearTimecycleModifier()
-end)
-
--- Display MVP of the match
-RegisterNetEvent("rocketleague:showMVP")
-AddEventHandler("rocketleague:showMVP", function(mvpID)
-    local mvpName = GetPlayerName(mvpID)
-    team1MVP = mvpName
-    SendNUIMessage({
-        type = "showMVP",
-        mvpName = mvpName
-    })
-end)
-
--- Display leaderboard UI
-RegisterNetEvent("rocketleague:showLeaderboard")
-AddEventHandler("rocketleague:showLeaderboard", function()
-    SendNUIMessage({
-        type = "updateLeaderboard",
-        players = { -- Dummy player data for now, will be replaced with actual data
-            { player_name = "Player1", wins = 5, goals = 10 },
-            { player_name = "Player2", wins = 4, goals = 8 }
-        }
-    })
-    SetNuiFocus(true, true)
-end)
-
--- Close leaderboard UI
-RegisterNUICallback("closeLeaderboard", function(_, cb)
-    SetNuiFocus(false, false)
-    cb("ok")
-end)
-
--- Handle leaderboard updates (server-side triggered)
-RegisterNetEvent("rocketleague:receiveLeaderboard")
-AddEventHandler("rocketleague:receiveLeaderboard", function(data)
-    SendNUIMessage({
-        type = "updateLeaderboard",
-        players = data
-    })
-end)
-
--- Handle game start
-RegisterNetEvent("rocketleague:startMatch")
-AddEventHandler("rocketleague:startMatch", function()
-    activeMatch = true
-    SendNUIMessage({
-        type = "startGame"
-    })
-    -- Reset scores and other match variables
-    team1Score = 0
-    team2Score = 0
-    timer = 180 -- Reset match timer to 3 minutes
-end)
-
--- End match logic and show results
-RegisterNetEvent("rocketleague:endMatch")
-AddEventHandler("rocketleague:endMatch", function(result)
-    activeMatch = false
-    SendNUIMessage({
-        type = "showMatchResult",
-        result = result
-    })
-    -- Show final scores and MVP
-    TriggerEvent("rocketleague:showMVP", team1Score > team2Score and team1MVP or team2MVP)
-end)
-
--- Interactions with the arcade for viewing leaderboards and starting the game
+-- rd-interact integration for game start and leaderboard
 Citizen.CreateThread(function()
     exports["rd-interact"]:AddPeekEntryByModel(-668163313, {
         {
@@ -223,182 +179,3 @@ Citizen.CreateThread(function()
         distance = { radius = 2.5 }
     })
 end)
-
--- Update team MVP based on performance
-function updateMVP(teamIndex, playerID)
-    if teamIndex == 1 then
-        team1MVP = GetPlayerName(playerID)
-    else
-        team2MVP = GetPlayerName(playerID)
-    end
-end
-
--- Manage team switching, if needed
-function switchTeams(playerID, newTeam)
-    if newTeam == 1 then
-        -- Move the player to Team 1
-        TriggerEvent("rocketleague:spawnPlayerVehicle", playerID)
-    elseif newTeam == 2 then
-        -- Move the player to Team 2
-        TriggerEvent("rocketleague:spawnPlayerVehicle", playerID)
-    end
-end
-
--- UI control and transition handling for match start, goals, etc.
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        
-        if activeMatch then
-            -- Play sounds, handle transitions, etc. while the match is active
-        end
-
-        -- Handle input for menu interactions or game state changes
-        if IsControlJustPressed(0, 38) then -- E key for example to interact
-            TriggerEvent("rocketleague:showLeaderboard")
-        end
-    end
-end)
-
--- Arcade interaction for starting a game or viewing the leaderboard
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-
-        if IsControlJustPressed(0, 38) then -- E key for interaction
-            if activeMatch then
-                TriggerEvent("rocketleague:showLeaderboard")
-            else
-                TriggerEvent("rocketleague:startMatch")
-            end
-        end
-    end
-end)
-
--- Add additional functionality for match end and reset
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-
-        if activeMatch and timer <= 0 then
-            TriggerServerEvent("rocketleague:endMatch", "timeout")
-        end
-    end
-end)
-
--- Listen for the "Start Game" button click from the UI
-RegisterNUICallback("startGameClicked", function(_, cb)
-    -- Trigger the server event to start the game
-    TriggerServerEvent("rocketleague:startGame")
-
-    -- Hide the start button and show other game UI elements
-    SetNuiFocus(false, false)  -- Close NUI focus
-    cb("ok")  -- Callback to acknowledge the interaction
-end)
-
-
--- Countdown logic
-RegisterNetEvent("rocketleague:startCountdown")
-AddEventHandler("rocketleague:startCountdown", function()
-    local countdownTime = 3 -- Starting countdown at 3
-    SetNuiFocus(true, true) -- Focus the UI for player interaction
-    
-    -- Start countdown
-    Citizen.CreateThread(function()
-        while countdownTime > 0 do
-            -- Update the countdown in the UI
-            SendNUIMessage({
-                type = "updateCountdown",
-                countdownTime = countdownTime
-            })
-            
-            Citizen.Wait(1000) -- Wait 1 second
-            countdownTime = countdownTime - 1
-        end
-        
-        -- Start the game once countdown is over
-        SendNUIMessage({
-            type = "startGame"
-        })
-    end)
-end)
--- Update score UI when server sends score update
-RegisterNetEvent("rocketleague:updateScore")
-AddEventHandler("rocketleague:updateScore", function(teamIndex, score)
-    if teamIndex == 1 then
-        SendNUIMessage({
-            type = "updateScore",
-            teamIndex = 1,
-            score = score
-        })
-    elseif teamIndex == 2 then
-        SendNUIMessage({
-            type = "updateScore",
-            teamIndex = 2,
-            score = score
-        })
-    end
-end)
-RegisterNetEvent("rocketleague:goalNotification")
-AddEventHandler("rocketleague:goalNotification", function(teamIndex)
-    local teamName = teamIndex == 1 and "Team A" or "Team B"
-    SendNUIMessage({
-        type = "goalNotification",
-        teamIndex = teamIndex
-    })
-end)
--- Show leaderboard in NUI
-RegisterNetEvent("rocketleague:showLeaderboard")
-AddEventHandler("rocketleague:showLeaderboard", function(data)
-    SendNUIMessage({
-        type = "updateLeaderboard",
-        players = data
-    })
-end)
--- Initially, do not display the UI
-Citizen.CreateThread(function()
-    -- Hide the UI when the player joins or when the server starts
-    SetNuiFocus(false, false)  -- Ensures no NUI focus initially
-end)
-
--- Show UI when "Start Game" button is clicked
-RegisterNUICallback("startGameClicked", function(_, cb)
-    -- Set focus for NUI when starting the game
-    SetNuiFocus(true, true)
-
-    -- Trigger the server to start the match
-    TriggerServerEvent("rocketleague:startGame")
-
-    -- Update the UI elements here
-    SendNUIMessage({
-        type = "gameStarted"
-    })
-    
-    cb("ok")  -- Acknowledge the button press
-end)
--- Countdown logic, triggered after clicking Start Game button
-RegisterNetEvent("rocketleague:startCountdown")
-AddEventHandler("rocketleague:startCountdown", function()
-    local countdownTime = 3 -- Starting countdown at 3
-    SetNuiFocus(true, true) -- Focus the UI for player interaction
-    
-    -- Start countdown
-    Citizen.CreateThread(function()
-        while countdownTime > 0 do
-            -- Update the countdown in the UI
-            SendNUIMessage({
-                type = "updateCountdown",
-                countdownTime = countdownTime
-            })
-            
-            Citizen.Wait(1000) -- Wait 1 second
-            countdownTime = countdownTime - 1
-        end
-        
-        -- Start the game once countdown is over
-        SendNUIMessage({
-            type = "startGame"
-        })
-    end)
-end)
-
