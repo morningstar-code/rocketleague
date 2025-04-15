@@ -1,0 +1,302 @@
+/* General Body */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #111111;
+}
+
+/* Game Container */
+#gameContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+
+/* Game UI Elements */
+.game-ui-element {
+    display: none;
+    position: absolute;
+    text-align: center;
+    color: #fff;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 2;
+}
+
+/* Countdown */
+#countdown {
+    font-size: 48px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 20px 40px;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    transition: opacity 1s;
+}
+
+#countdownText {
+    font-size: 72px;
+    color: #ff0;
+}
+
+/* Goal Notification */
+#goalNotification {
+    display: none;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 5px;
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+    transition: opacity 1s;
+    opacity: 1;
+}
+
+#goalMessage {
+    font-size: 48px;
+    font-weight: bold;
+    color: #ffdd00;
+}
+
+/* Match Timer */
+#matchTimer {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 48px;
+    color: #fff;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+/* Scoreboard */
+#scoreboard {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: space-around;
+    width: 50%;
+    font-size: 30px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+}
+
+.team-score {
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+/* Leaderboard */
+#leaderboard {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%;
+    max-height: 60%;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    overflow-y: scroll;
+    z-index: 999;
+}
+
+#leaderboard h2 {
+    text-align: center;
+    color: #fff;
+}
+
+#leaderboardList {
+    list-style-type: none;
+    padding: 0;
+}
+
+#leaderboardList li {
+    background: rgba(0, 0, 0, 0.7);
+    margin: 5px;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 24px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+}
+
+.player-name {
+    font-weight: bold;
+    color: #ffdd00;
+}
+
+.stats {
+    color: #00ff00;
+}
+
+/* MVP */
+#mvpSection {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 20px 30px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+#mvpMessage {
+    font-size: 36px;
+    color: #ffdd00;
+    font-weight: bold;
+}
+
+/* Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+#overlayContent {
+    text-align: center;
+    color: #fff;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+#resultMessage {
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.game-ui-button {
+    background-color: #28a745;
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 18px;
+    margin: 10px 0;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.game-ui-button:hover {
+    background-color: #218838;
+}
+
+.game-ui-button:active {
+    background-color: #1e7e34;
+}
+
+/* Adjustments for smaller screens */
+@media (max-width: 768px) {
+    #scoreboard {
+        width: 80%;
+        font-size: 20px;
+    }
+
+    #leaderboard {
+        width: 90%;
+    }
+
+    #countdownText {
+        font-size: 48px;
+    }
+
+    #goalMessage {
+        font-size: 36px;
+    }
+
+    #mvpMessage {
+        font-size: 30px;
+    }
+}
+
+/* Add more elements for dynamic UI handling */
+#startGameButton {
+    background-color: #17a2b8;
+}
+
+#startGameButton:active {
+    background-color: #138496;
+}
+
+/* Additional UI animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.game-ui-button {
+    animation: pulse 2s infinite;
+}
+
+/* Animations for transitions */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+.game-ui-element {
+    animation: fadeIn 1s forwards;
+}
+
+#goalNotification {
+    animation: fadeIn 1s forwards;
+}
+
+#mvpSection {
+    animation: fadeIn 1s forwards;
+}
+
+#leaderboard {
+    animation: fadeIn 1s forwards;
+}

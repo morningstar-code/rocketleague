@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket League - Arcade Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main container -->
+    <div id="gameContainer">
+        <!-- Countdown -->
+        <div id="countdown" class="game-ui-element">
+            <p>Starting in <span id="countdownText">3</span>...</p>
+        </div>
+
+        <!-- Goal Notification -->
+        <div id="goalNotification" class="game-ui-element">
+            <p id="goalMessage">Team A Scored!</p>
+        </div>
+
+        <!-- Match Timer -->
+        <div id="matchTimer" class="game-ui-element">
+            <p>00:00</p>
+        </div>
+
+        <!-- Scoreboard -->
+        <div id="scoreboard" class="game-ui-element">
+            <div id="teamAScore" class="team-score">Team A: 0</div>
+            <div id="teamBScore" class="team-score">Team B: 0</div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div id="leaderboard" class="game-ui-element">
+            <h2>Leaderboard</h2>
+            <ul id="leaderboardList">
+                <!-- Dynamic leaderboard will be inserted here -->
+            </ul>
+        </div>
+
+        <!-- MVP -->
+        <div id="mvpSection" class="game-ui-element">
+            <p id="mvpMessage">MVP: Player1</p>
+        </div>
+
+        <!-- Main Button -->
+        <button id="startGameButton" class="game-ui-button">Start Game</button>
+    </div>
+
+    <!-- Hidden elements for controlling UI visibility -->
+    <div id="overlay" class="overlay">
+        <div id="overlayContent">
+            <h3>Game Over</h3>
+            <p id="resultMessage">Team A Wins!</p>
+            <button id="restartButton" class="game-ui-button">Play Again</button>
+            <button id="closeLeaderboardButton" class="game-ui-button">Close Leaderboard</button>
+        </div>
+    </div>
+
+    <!-- Custom Scripts -->
+    <script src="script.js"></script>
+
+    <!-- NUI Communication -->
+    <script>
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+
+            // Countdown
+            if (data.type === 'startCountdown') {
+                document.getElementById("countdown").style.display = "block";
+                document.getElementById("countdownText").innerText = data.countdownTime;
+                setInterval(function() {
+                    let countdownValue = parseInt(document.getElementById("countdownText").innerText);
+                    if (countdownValue > 1) {
+                        countdownValue--;
+                        document.getElementById("countdownText").innerText = countdownValue;
+                    } else {
+                        document.getElementById("countdown").style.display = "none";
+                    }
+                }, 1000);
+            }
+
+            // Update score
+            if (data.type === 'updateScore') {
+                if (data.teamIndex == 1) {
+                    document.getElementById("teamAScore").innerText = `Team A: ${data.score}`;
+                } else if (data.teamIndex == 2) {
+                    document.getElementById("teamBScore").innerText = `Team B: ${data.score}`;
+                }
+            }
+
+            // Goal notification
+            if (data.type === 'goalNotification') {
+                let teamName = data.teamIndex === 1 ? "Team A" : "Team B";
+                let goalMessage = `${teamName} Scored!`;
+                document.getElementById("goalMessage").innerText = goalMessage;
+                document.getElementById("goalNotification").style.display = "block";
+                setTimeout(function() {
+                    document.getElementById("goalNotification").style.display = "none";
+                }, 3000);
+            }
+
+            // Update match timer
+            if (data.type === 'updateTimer') {
+                let minutes = Math.floor(data.timeLeft / 60);
+                let seconds = data.timeLeft % 60;
+                document.getElementById("matchTimer").innerText = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+            }
+
+            // Display leaderboard
+            if (data.type === 'updateLeaderboard') {
+                let leaderboardList = document.getElementById("leaderboardList");
+                leaderboardList.innerHTML = "";
+                data.players.forEach(function(player) {
+                    let listItem = document.createElement("li");
+                    listItem.innerHTML = `
+                        <span class="player-name">${player.player_name}</span>
+                        <div class="stats">
+                            Wins: ${player.wins} | Goals: ${player.goals}
+                        </div>
+                    `;
+                    leaderboardList.appendChild(listItem);
+                });
+                document.getElementById("leaderboard").style.display = "block";
+                setTimeout(function() {
+                    document.getElementById("leaderboard").style.display = "none";
+                }, 5000);
+            }
+
+            // Display MVP
+            if (data.type === 'showMVP') {
+                document.getElementById("mvpMessage").innerText = `MVP: ${data.mvpName}`;
+                document.getElementById("mvpSection").style.display = "block";
+                setTimeout(function() {
+                    document.getElementById("mvpSection").style.display = "none";
+                }, 5000);
+            }
+
+            // Match result
+            if (data.type === 'showMatchResult') {
+                document.getElementById("overlayContent").style.display = "block";
+                document.getElementById("resultMessage").innerText = data.result;
+                setTimeout(function() {
+                    document.getElementById("overlay").style.display = "none";
+                }, 5000);
+            }
+        });
+
+        // Button Click Events
+        document.getElementById("startGameButton").addEventListener("click", function() {
+            SendNUIMessage({
+                type: "startMatch"
+            });
+        });
+
+        document.getElementById("restartButton").addEventListener("click", function() {
+            SendNUIMessage({
+                type: "restartGame"
+            });
+            document.getElementById("overlay").style.display = "none";
+        });
+
+        document.getElementById("closeLeaderboardButton").addEventListener("click", function() {
+            SendNUIMessage({
+                type: "closeLeaderboard"
+            });
+        });
+    </script>
+</body>
+</html>
+<!-- Start Game Button -->
+<button id="startGameButton" onclick="startGameClicked()">Start Game</button>
+<div id="countdown" style="font-size: 48px; color: white;"></div>
+<div id="scoreboard">
+    <div id="teamA_score">Team A: 0</div>
+    <div id="teamB_score">Team B: 0</div>
+</div>
+<div id="goalNotification" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; color: yellow; display: none;">
+    Goal Scored!
+</div>
+<!-- Initially hidden UI elements -->
+<div id="gameScreen" style="display: none;">
+    <!-- Game Elements (Score, Timer, etc.) -->
+</div>
+
+<!-- Start Game Button -->
+<button id="startGameButton" onclick="startGameClicked()">Start Game</button>
+<!-- Display this UI when the game has started -->
+<div id="gameStarted" style="display: none;">
+    <div id="teamA_score">Team A: 0</div>
+    <div id="teamB_score">Team B: 0</div>
+    <div id="matchTimer">Timer: 00:00</div>
+    <div id="goalNotification"></div>
+</div>
+
+
